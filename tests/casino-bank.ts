@@ -77,7 +77,7 @@ describe("casino-bank", () => {
         skipPreflight: true,
       };
   
-      await program.methods.depositSplToPda(new BN(100_000_000))
+      await program.methods.depositTokenToPda(new BN(100_000_000))
                             .accounts({
                               tokenAccountOwnerPda: tokenAccountOwnerPDA,
                               vaultTokenAccount: tokenVault,
@@ -98,6 +98,50 @@ describe("casino-bank", () => {
   })
 
   it("emergency withdraw token of pda by owner", async () => {
+    const { mint, ownerTokenAccount } = await setupSplInitialize();
+
+    let [tokenAccountOwnerPDA] = PublicKey.findProgramAddressSync(
+      [OWNER_PDA_SEED],
+      program.programId
+    );
+
+    let [tokenVault] = PublicKey.findProgramAddressSync(
+      [TOKEN_VAULT_SEED, mint.toBuffer()],
+      program.programId
+    );
+
+    let confirmOptions = {
+      skipPreflight: true,
+    };
+
+    await program.methods.depositTokenToPda(new BN(100_000_000))
+                          .accounts({
+                            tokenAccountOwnerPda: tokenAccountOwnerPDA,
+                            vaultTokenAccount: tokenVault,
+                            senderTokenAccount: ownerTokenAccount.address,
+                            mintOfTokenBeingSent: mint,
+                            signer: owner.publicKey
+                          })
+                          .rpc(confirmOptions);
+
+    let vaultBalance = await connection.getTokenAccountBalance(tokenVault);
+
+    assert.equal(vaultBalance.value.uiAmount, 100);
+
+    await program.methods.emergencyTokenWithdraw(new BN(50_000_000))
+                          .accounts({
+                            tokenAccountOwnerPda: tokenAccountOwnerPDA,
+                            vaultTokenAccount: tokenVault,
+                            mintOfTokenBeingSent: mint,
+                            signer: owner.publicKey,
+                            signerAta: ownerTokenAccount.address
+                          })
+                          .rpc(confirmOptions);
+
+    let vaultChangedBalance = await connection.getTokenAccountBalance(tokenVault);
+    assert.equal(vaultChangedBalance.value.uiAmount, 50);
+    let ownerBalance = await connection.getTokenAccountBalance(ownerTokenAccount.address);
+    assert.equal(ownerBalance.value.uiAmount, 950);
 
   })
 

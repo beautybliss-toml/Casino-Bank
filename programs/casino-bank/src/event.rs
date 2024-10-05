@@ -3,7 +3,7 @@ use anchor_spl::token::{Mint, TokenAccount};
 
 #[event]
 #[cfg_attr(feature = "client", derive(Debug))]
-pub struct DepositSolEvent {
+pub struct DepositEvent {
     #[index]
     pub sender_account: Pubkey,
     pub amount: u64,
@@ -11,7 +11,7 @@ pub struct DepositSolEvent {
 
 #[event]
 #[cfg_attr(feature = "client", derive(Debug))]
-pub struct WithdrawSolEvent {
+pub struct WithdrawEvent {
     #[index]
     pub owner_account: Pubkey,
     pub amount: u64,
@@ -19,7 +19,7 @@ pub struct WithdrawSolEvent {
 
 #[event]
 #[cfg_attr(feature = "client", derive(Debug))]
-pub struct DepositSplEvent {
+pub struct DepositTokenEvent {
     #[index]
     pub sender_account: Pubkey,
     pub token: Pubkey,
@@ -28,7 +28,7 @@ pub struct DepositSplEvent {
 
 #[event]
 #[cfg_attr(feature = "client", derive(Debug))]
-pub struct WithdrawSplEvent {
+pub struct WithdrawTokenEvent {
     #[index]
     pub owner_account: Pubkey,
     pub token: Pubkey,
