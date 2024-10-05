@@ -128,7 +128,12 @@ pub mod casino_bank {
             signer,
         );
         anchor_spl::token::transfer(cpi_ctx, token_amount)?;
-        
+        // emit event
+        emit!(WithdrawTokenEvent{
+            owner_account: *(ctx.accounts.signer.to_account_info().key),
+            token: *(ctx.accounts.mint_of_token_being_sent.to_account_info().key),
+            amount: token_amount
+        });
         Ok(())
     }
 
