@@ -19,6 +19,14 @@ pub struct WithdrawEvent {
 
 #[event]
 #[cfg_attr(feature = "client", derive(Debug))]
+pub struct WithdrawEventToUser {
+    #[index]
+    pub recipient_account: Pubkey,
+    pub amount: u64,
+}
+
+#[event]
+#[cfg_attr(feature = "client", derive(Debug))]
 pub struct DepositTokenEvent {
     #[index]
     pub sender_account: Pubkey,
@@ -37,6 +45,9 @@ pub struct WithdrawTokenEvent {
 
 #[event]
 #[cfg_attr(feature = "client", derive(Debug))]
-pub struct ProcessedWithdrawEvent {
-    
+pub struct WithdrawTokenEventToUser {
+    #[index]
+    pub recipient_account: Pubkey,
+    pub token: Pubkey,
+    pub amount: u64,
 }
