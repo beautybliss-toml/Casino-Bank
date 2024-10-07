@@ -146,19 +146,35 @@ pub mod casino_bank {
     ///
     pub fn transfer_token_to_user_by_owner(ctx: Context<TransferToken>, token_amount: u64) -> Result<()> {
         // check admin
-        assert!(*(ctx.accounts.signer.to_account_info().key) == crate::admin::id());
+        assert!(*(ctx.accounts.owner.to_account_info().key) == crate::admin::id());
         // check balance
         assert!(ctx.accounts.vault_token_account.amount >= token_amount);
 
-        msg!("Token amount transfer out: {}!", token_amount);
+        msg!("Token amount transfer out to user: {}!", token_amount);
 
         // make transfer
         let transfer_instruction = Transfer {
             from: ctx.accounts.vault_token_account.to_account_info(),
-            to: ctx.accounts.signer_ata.to_account_info(),
+            to: ctx.accounts.recipient_signer_ata.to_account_info(),
             authority: ctx.accounts.token_account_owner_pda.to_account_info(),
         };
-        
+        // make signer of pda
+        let bump = ctx.bumps.token_account_owner_pda;
+        let seeds = &[b"token_account_owner_pda".as_ref(), &[bump]];
+        let signer = &[&seeds[..]];
+        // cpi
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            transfer_instruction,
+            signer,
+        );
+        anchor_spl::token::transfer(cpi_ctx, token_amount)?;
+        // emit event
+        emit!(WithdrawTokenEventToUser{
+            recipient_account: *(ctx.accounts.recipient_signer.to_account_info().key),
+            token: *(ctx.accounts.mint_of_token_being_sent.to_account_info().key),
+            amount: token_amount
+        });
         Ok(())
     }
 
@@ -276,6 +292,12 @@ pub struct DepositToken<'info> {
     )]
     vault_token_account: Account<'info, TokenAccount>,
 
+    // #[account(
+    //     init_if_needed,
+    //     payer=signer,
+    //     seeds=[b"", signer, mint_of_token_being_sent.key().as_ref()],
+    // )]
+
     #[account(mut)]
     sender_token_account: Account<'info, TokenAccount>,
 
@@ -338,12 +360,12 @@ pub struct TransferToken<'info> {
     mint_of_token_being_sent: Account<'info, Mint>,
 
     #[account(mut)]
-    signer: Signer<'info>,
-    
+    owner: Signer<'info>,
+    recipient_signer: Signer<'info>,
     #[account(mut,
-        constraint = signer_ata.mint == *(mint_of_token_being_sent.to_account_info().key) && signer_ata.owner == *(signer.to_account_info().key)
+        constraint = recipient_signer_ata.mint == *(mint_of_token_being_sent.to_account_info().key) && recipient_signer_ata.owner == *(recipient_signer.to_account_info().key)
     )]
-    signer_ata: Account<'info, TokenAccount>,
+    recipient_signer_ata: Account<'info, TokenAccount>,
 
     system_program: Program<'info, System>,
     token_program: Program<'info, Token>,
